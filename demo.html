@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<!-- saved from url=(0054)http://www.jq22.com/demo/Nestable-master-150402224310/ -->
+<html lang="en">
+<!--<![endif]-->
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+    <title>Nestable</title>
+    <link href="nestable.css" rel="stylesheet">
+    <link href="bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
+    <style type="text/css">
+    i {
+        padding: 0 2px;
+    }
+
+    .ctrl i{
+            cursor: pointer;
+        }
+        .history_log_span{
+            cursor: pointer;
+            margin-left: 7px;}
+        i{padding: 0 2px;}
+        .dd-handle {
+            height: 100%;
+            padding: 5px 5px;
+            text-decoration: none;
+            font-weight: bold;
+            border: 0;
+            margin: 0;
+            border-radius: 0;
+            box-sizing: border-box;
+            border-top: 0;
+            display: block;
+            background: #fff;
+            font-weight: normal;
+        }
+        .dd-item > button {
+            height: 15px;
+            width: 25px;
+        }
+        .dd-selected {
+            border-left: 3px solid transparent;
+            border-left-color: #3c8dbc;
+            font-weight: bold;
+            color: #3c8dbc;
+        }
+        .dd-flow-selected {
+            border-left-color: #3c8dbc;
+            font-weight: bold;
+            color: #3c8dbc;
+        }
+        .dd-list .dd-list {
+            padding-left: 20px;
+        }
+        .badge-gray{
+            padding: 3px 5px;
+            background: #555555;
+            font-size: 50%;
+            color: white;
+        }
+        .badge-blue{
+            padding: 3px 5px;
+            background: #007ec6;
+            font-size: 50%;
+            color: white;
+        }
+        .badge-green{
+            padding: 3px 5px;
+            background: #44cc11;
+            font-size: 50%;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="margin-left: 200px;">
+        <input type="text" class="form-control flow-search-input" placeholder="Search..."title="多关键字查询：以逗号、空格分隔关键字">
+        <div class="cf nestable-lists">
+            <div class="dd" id="nestable">
+                <ol class='dd-list'>
+                </ol>
+            </div>
+        </div>
+    </div>
+    <script src="./jquery.min.js(1).下载"></script>
+    <script src="nestable2.js"></script>
+    <script src="bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script>
+    //点击事件
+    $(function() {
+        var result = '[{"id":1,"name":"COD-A型仪器出厂检验1","children":null,"parentId":-1},{"id":2,"name":"COD-A型仪器出厂检验2","children":null,"parentId":-1},{"id":3,"parentId":-1,"name":"COD-A型仪器出厂检验3","children":[{"name":"COD-A型-质控校验重复性150mg/L4","badge":"质控校验,出场质检环节","id":4,"parentId":3},{"name":"COD-A型仪器出厂检验5","id":5,"badge":"质控校验,出场质检环节","parentId":3}]}]';
+        var obj = '[{"id":123,"type":1,"name":"根COD-A型仪器出厂检验","children":' + result + '}]';
+        //初始化tree
+        FlowTree.init();
+    });
+
+
+    var FlowTree = {
+        options : {
+            data : null,
+            selectedId : null,
+            nestable : null,
+            searching : false,
+            dataMap : {}
+        },
+        init : function(){
+            //获取列表数据
+            var result = '[{"id":1,"name":"COD-A型仪器出厂检验A型仪器出厂检验A型仪器出厂检验A型仪器出厂检验A型仪器出厂检验A型仪器出厂检验A型仪器出厂检验A型仪器出厂检验A型仪器出厂检验1","children":null,"parentId":-1},{"id":2,"name":"COD-A型仪器出厂检验2","children":null,"parentId":-1},{"id":3,"parentId":-1,"name":"COD-A型仪器出厂检验3","children":[{"name":"COD-A型-质控校验重复性150mg/L4","badge":"质控校验,出场质检环节","id":4,"parentId":3},{"name":"COD-A型仪器出厂检验5","id":5,"badge":"质控校验,出场质检环节","parentId":3}]}]';
+            var obj = '[{"id":123,"type":1,"name":"根COD-A型仪器出厂检验","children":' + result + '}]';
+            //输入框如果清空了数据则全部显示
+            $(".flow-search-input").bind('input porpertychange',function(){
+                if(!$(this).val()){
+                    FlowTree.options.nestable.nestable('destroy');
+                    FlowTree.options.searching=false;
+                    FlowTree.create(FlowTree.options.data);
+                    FlowTree.showItem(FlowTree.options.selectedId);
+                }else{
+                    if(FlowTree.options.data&&$(".flow-search-input").val()){
+                        var searchString = $(".flow-search-input").val();
+                        if(searchString.split(",")>searchString.split(" ")){
+                            FlowTree.search(searchString.split(","));
+                        }else{
+                            FlowTree.search(searchString.split(" "));
+                        }
+                    }
+                };
+            });
+            FlowTree.create(obj);
+            //默认展开事件
+            $('#nestable').nestable("expandItem",$('[data-id=4]'));
+           FlowTree.options.selectedId=4;
+        },
+        //根据传入的json初始化tree
+        create : function (obj) {
+            //存储第一次的全部流程节点
+            if(!FlowTree.options.data){
+                FlowTree.options.data = obj;
+            }
+            //清空界面
+            $('.dd-list').html('');
+            //创建tree
+            var nestable = $('#nestable').nestable({
+                json: obj,
+                group: 1,
+                callback:function(l, e,p){
+                    //如果没有父元素则不做修改
+                    //parentId
+                    var parentId = -1;
+                    if(e.closest("ol")){
+                        parentId = e.closest("ol").closest("li").attr("data-id");
+                    }
+                    //order-number,如果没有上一个兄弟元素则为1
+                    var orderNumber = 1;
+                    if(e.prev("li").attr("data-orderNumber")){
+                        orderNumber = e.prev("li").attr("data-orderNumber");
+                    }
+                    FlowTree.showItem(FlowTree.options.selectedId);
+                },
+                itemClick: function(e) {
+                    //如果当前选中的节点没有子节点则选中
+                    var classArr = $(e).attr("class");
+                    if (classArr.indexOf('update') >= 0) {
+                        console.log('update');
+                        return;
+                    } else if (classArr.indexOf('delete') >= 0) {
+                        console.log('delete');
+                        return;
+                    } else if (classArr.indexOf('add') >= 0) {
+                        console.log('add');
+                        return;
+                    }
+                    //如果是搜索状态下禁止拖动
+                    if(FlowTree.options.searching!=false){
+                        return false;
+                    }
+                    //返回true继续执行，返回false停止执行
+                    return true;
+                },
+                onDragStart :function(l,e){
+                    FlowTree.options.selectedId = e.closest("li").attr("data-id");
+                },
+                //Override节点显示
+                itemRenderer: function(item_attrs, content, children, options, item) {
+                    var item_attrs_string = $.map(item_attrs, function(value, key) {
+                        return ' ' + key + '="' + value + '"';
+                    }).join(' ');
+                    var html = '<' + options.itemNodeName + item_attrs_string + '>';
+                    if(item.children){
+                        html += '<' + options.handleNodeName + ' class="' + options.handleClass + ' flow-group">';
+                    }else{
+                        html += '<' + options.handleNodeName + ' class="' + options.handleClass+'">';
+                    }
+                    html += '<' + options.contentNodeName + ' class="' + options.contentClass + '">';
+                    html += item.name;
+                    html += '</' + options.contentNodeName + '>';
+                    html += '<span class="ctrl" hidden style="float: right;">'
+                    if(item.children){
+                        html += '    <a title="导入"><i class="glyphicon glyphicon glyphicon-paste copy"></i></a>'
+                        html += '    <a title="添加"><i class="glyphicon glyphicon-plus add"></i></a>'
+                        html += '    <a title="修改"><i class="glyphicon glyphicon-edit update"></i></a>'
+                        html += '    <a title="删除"><i class="glyphicon glyphicon-remove delete"></i></a>'
+                    }else{
+                        html += '    <a title="修改"><i class="glyphicon glyphicon-edit update"></i></a>'
+                        html += '    <a title="删除"><i class="glyphicon glyphicon-remove delete"></i></a>'
+                    }
+                    html += '</span>'
+                    html += '<br>'
+                    //标记不同
+                    if(item.badge){
+                        var order = 0;
+                        $.each(item.badge.split(","),function(index, el) {
+                            switch(order%3){
+                                case 0:
+                                    html +='<span class="badge-green">'+el+'</span>'
+                                    break;
+                                case 1:
+                                    html +='<span class="badge-gray" >'+el+'</span>'
+                                    break;
+                                case 2:
+                                    html +='<span class="badge-blue">'+el+'</span>'
+                                    break;
+                            }
+                            order++;
+                        });
+                    }
+                    html += '</' + options.handleNodeName + '>';
+                    html += children;
+                    html += '</' + options.itemNodeName + '>';
+                    return html;
+                }
+            });
+            //Override展开事件
+            nestable.on('expandItem', function(event) {
+                //组节点和流程节点样式区分
+                if($(event.target).children("ol").length>0){
+                    $(event.target).children(".dd-handle").addClass('dd-selected');
+                }else{
+                    $(event.target).children(".dd-handle").addClass('dd-flow-selected');
+                };
+                var fatherLi = event.target.closest("ol").closest("li");
+                if (fatherLi) {
+                    nestable.nestable('expandItem', $(fatherLi));
+                };
+            });
+            //Override收起事件
+            nestable.on('collapseItem', function(event) {
+                $(event.target).children(".dd-handle").removeClass('dd-selected');
+            });
+            //节点的上浮事件
+            $(".dd-handle").hover(function() {
+                var _ctrl = $(this).children(".ctrl");
+                _ctrl.show();
+                return false;
+            }, function() {
+                var _ctrl = $(this).children(".ctrl");
+                _ctrl.hide();
+                return false;
+            });
+            FlowTree.options.nestable = nestable;
+        },
+        //搜索当前列表内的内容
+        search : function(conditions) {
+            //判断是否是连续的搜索
+            if(!FlowTree.options.searching){
+                FlowTree.options.data = FlowTree.options.nestable.nestable('serialize');
+                //在搜索的情况下禁止拖动
+                FlowTree.options.searching=true;
+            }
+
+            var searchResult = FlowTree.screen(FlowTree.options.data,conditions);
+            FlowTree.options.nestable.nestable('destroy');
+            FlowTree.create(searchResult);
+            FlowTree.options.nestable.nestable("collapseAll");
+        },
+        screen : function(result, conditions) {
+            var backResult = [];
+            //1。符合条件的节点添加进入返回值中
+            $.each(result, function(index, item) {
+                //判断该节点是否符合过滤条件
+                $.each(conditions, function(i, condition) {
+                    if ((item.name && item.name.indexOf(condition) >= 0) || (item.badge && item.badge.indexOf(condition) >= 0)) {
+                        backResult.push(item);
+                        return false;
+                    }
+                });
+                //2.判断子节点是否包含符合过滤条件的数据
+                if (item.children) {
+                    var childResult = FlowTree.screen(item.children, conditions);
+                    if (childResult.length > 0) {
+                        backResult = backResult.concat(childResult);
+                    };
+                }
+            });
+            //3.返回符合条件的数据
+            return backResult;
+        },
+        showItem : function(id){
+            $.each($(".dd-selected"), function(index,item){
+                $(item).removeClass('dd-selected');
+            });
+            $(".dd-flow-selected").removeClass('dd-flow-selected');
+            FlowTree.options.nestable.nestable("expandItem",$("[data-id="+id+"]"));
+        },
+        update : function(){},
+        add : function(){},
+        remove : function(){}
+    }
+
+    </script>
+</body>
+
+</html>
